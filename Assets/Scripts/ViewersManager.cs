@@ -1,24 +1,18 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using Unity.VisualScripting;
 using Unity.VisualScripting.FullSerializer;
 using UnityEngine;
 
 public class ViewersManager : MonoBehaviour
 {
-
-    // VIEWER POOL
-    private string [] viewersNames = {"John", "Ben", "Karl", "Hans", "Smiljan"};
+    // VIEWERS
     private Viewer [] viewersPool;
-    private float maxAttribute = 1;
-    private float minAttribute = 0;
-    private bool viewersGenerated = false;
-
-    // VIEWERS LIST
     private List<Viewer> currentViewersList = new();
-    private int currentViewers = 0;
-    private float startViewerUpdateCD = 5f;
-    private float remainingViewerUpdateCD;
+    private float updateViewersCD = 5f;
+    private float remainingUpdateViewersCD;
 
     // INITIAL
     private float subInitialViewChance = 0.8f;
@@ -28,135 +22,217 @@ public class ViewersManager : MonoBehaviour
     private float minViewInterestReq = 0.5f;
 
     // SATISFACTION
-    private float satisfactionAttReq = 0.5f;
-    private float minViewSatisfactionReq = 0f;
+    private float attSatisfactionReq = 0.5f;
+    private float minViewSatisfactionReq = -0.1f;
     private float gameSatisfactionFactor = 0.1f;
     private float socialSatisfactionFactor = 0.1f;
-    private float startSatsifactionUpdateCD = 2f;
-    private float remainingSatsifactionUpdateCD;
+    private float updateSatisfationCD = 1f;
+    private float remainingUpdateSatisfactionCD;
+    
+    // FOLLOWERS
+    private float minFollowSatisfactionReq = 0.5f;
+    private float updateFollowersCD = 1f;
+    private float remainingUpdateFollowersCD;
 
-    Dictionary<GameManager.CamSize, float> camSizeInterestMultipliers = new (){
-        {GameManager.CamSize.Small, 0.5f},
-        {GameManager.CamSize.Medium, 1f},
-        {GameManager.CamSize.Large, 2f}
+    // SUBSCRIBERS
+    private float minSubSatisfactionReq = 1f;
+    private float updateSubscribersCD = 1f;
+    private float remainingUpdateSubscribersCD;
+
+    // DONATIONS
+    private float minDonationSatisfactionReq = 0.5f;
+    private float donationBaseChance = 0.4f;
+    private float donationFollowerChance = 0.6f;
+    private float donationSubChance = 0.8f;
+    private float donationBaseAmount = 100f;
+    private float updateDonationsCD = 2f;
+    private float remainingUpdateDonationsCD;
+
+    // MULTIPLIERS
+    private float socialActionMultiplier = 1f;
+    Dictionary<GameManager.CamSizes, float> camSizeInterestMultipliers = new (){
+
+        {GameManager.CamSizes.Small, 0.5f},
+        {GameManager.CamSizes.Medium, 1f},
+        {GameManager.CamSizes.Large, 2f}
     };
 
-    void Start()
-    {
-        if(!viewersGenerated){
-            GenerateViewers();
-            viewersGenerated = true;
-            Debug.Log("viewersPool length is: " + viewersPool.Length);
-        }
+    void Start(){
 
-        remainingViewerUpdateCD = startViewerUpdateCD;
-        remainingSatsifactionUpdateCD = startSatsifactionUpdateCD;
+        viewersPool = GameManager.Instance.GetViewersPool();
+
+        remainingUpdateViewersCD = updateViewersCD;
+        remainingUpdateSatisfactionCD = updateSatisfationCD;
+        remainingUpdateFollowersCD = updateFollowersCD;
+        remainingUpdateSubscribersCD = updateSubscribersCD;
+        remainingUpdateDonationsCD = updateDonationsCD;
     }
 
-    void Update()
-    {
-
-        // viewers update
-        remainingViewerUpdateCD -= Time.deltaTime;
-        if(remainingViewerUpdateCD <= 0){
-            UpdateViewers();
-            remainingViewerUpdateCD = startViewerUpdateCD;
-            Debug.Log("Viewers updated.");
-        }
-
-        //satisfaction update
-        remainingSatsifactionUpdateCD -= Time.deltaTime;
-        if(remainingSatsifactionUpdateCD <= 0){
-            UpdateStreamSatisfaction();
-            remainingSatsifactionUpdateCD = startSatsifactionUpdateCD;
-            Debug.Log("StreamSatisfaction updated.");
-        }
+    void Update(){
         
-    }
-
-    private void GenerateViewers(){
-
-        viewersPool = new Viewer[viewersNames.Length];
-
-        var viewerIndex = 0;
-
-        // create new viewers with all names and random attributes and assign it to array
-        foreach(string viewerName in viewersNames){
-            
-            var newViewer = new Viewer{
-                Name = viewerName,
-
-                AffinityForRPG = Random.Range(minAttribute, maxAttribute),
-                AffinityForArcade = Random.Range(minAttribute, maxAttribute),
-                AffinityForAction = Random.Range(minAttribute, maxAttribute),
-                AffinityForSimulation = Random.Range(minAttribute, maxAttribute),
-
-                AffinityForFlirt = Random.Range(minAttribute, maxAttribute),
-                AffinityForGiggle = Random.Range(minAttribute, maxAttribute),
-                AffinityForHype = Random.Range(minAttribute, maxAttribute),
-                AffinityForRage = Random.Range(minAttribute, maxAttribute),                
-            };
-
-            viewersPool[viewerIndex] = newViewer;
-            viewerIndex++;
-
-            //Debug.Log("New viewer " + newViewer.Name + " generated with AfinnityForRPG of " + newViewer.AffinityForRPG);
+        // viewers update
+        remainingUpdateViewersCD -= Time.deltaTime;
+        if(remainingUpdateViewersCD <= 0){
+            UpdateViewers();
+            remainingUpdateViewersCD = updateViewersCD;
+            //Debug.Log("Viewers updated.");
         }
+
+        // satisfaction update
+        remainingUpdateSatisfactionCD -= Time.deltaTime;
+        if(remainingUpdateSatisfactionCD <= 0){
+            UpdateStreamSatisfaction();
+            remainingUpdateSatisfactionCD = updateSatisfationCD;
+            //Debug.Log("StreamSatisfaction updated.");
+        }
+
+        // followers update
+        remainingUpdateFollowersCD -= Time.deltaTime;
+        if(remainingUpdateFollowersCD <= 0){
+            UpdateFollowers();
+            remainingUpdateFollowersCD = updateFollowersCD;
+            //Debug.Log("Followers updated.");
+        }
+
+        // subscribers update
+        remainingUpdateSubscribersCD -= Time.deltaTime;
+        if(remainingUpdateSubscribersCD <= 0){
+            UpdateSubscribers();
+            remainingUpdateSubscribersCD = updateSubscribersCD;
+            //Debug.Log("Subscribers updated.");
+        }
+
+        // donations update
+        remainingUpdateDonationsCD -= Time.deltaTime;
+        if(remainingUpdateDonationsCD <= 0){
+            UpdateDonations();
+            remainingUpdateDonationsCD = updateDonationsCD;
+            //Debug.Log("Donations updated");
+        }        
     }
 
-// add initial viewers to current viewer list
-    private void UpdateInitialViewers(){
+    // add initial viewers from pool of subscribers and followers
+    private void SetInitialViewers(){
+
         foreach(Viewer viewer in viewersPool){
             
-            var rollRNG = Random.Range(0f, 1f);
+            var rollRNG = UnityEngine.Random.Range(0f, 1f);
 
             if(viewer.IsSubscribed && rollRNG <= subInitialViewChance){
+                ResetViewer(viewer, true);                
                 currentViewersList.Add(viewer);
             }
 
-            else if(viewer.IsFollowing && rollRNG <= followerInitialViewChance){
+            else if(viewer.IsFollower && rollRNG <= followerInitialViewChance){
+                ResetViewer(viewer, true);
                 currentViewersList.Add(viewer);
             }
         }
     }
 
     private void UpdateViewers(){
+
         UpdateStreamInterest();
 
         foreach(Viewer viewer in viewersPool){
-            if(viewer.IsWatching && viewer.StreamSatisfaction < minViewSatisfactionReq){
-                viewer.IsWatching = false;
-                viewer.StreamSatisfaction = 0f;
+
+            // non-followers who's current StreamSatisfaction <= min satisfaction -> LEAVE
+            // followers will leave after next UpdateFollowers if they unfollow since -minFollowSatisfaction < minViewSatisfation (can add check if needed)
+            if(viewer.IsWatching && !viewer.IsFollower && viewer.StreamSatisfaction < minViewSatisfactionReq){
+                ResetViewer(viewer, false);
                 currentViewersList.Remove(viewer);
                 Debug.Log("Viewer stopped watching: " + viewer.Name);
             }
-            else if (!viewer.IsWatching && viewer.StreamInterest > minViewInterestReq){
-                viewer.IsWatching = true;
-                viewer.StreamInterest = 0f;
+
+            // viewers who's current StreamInterest >= min interest -> JOIN
+            else if (!viewer.IsWatching && viewer.StreamInterest >= minViewInterestReq){
+                ResetViewer(viewer, true);
                 currentViewersList.Add(viewer);
                 Debug.Log("New viewer has joined: " + viewer.Name);
             }
         }
 
-        SetCurrentViewers();
+        GameManager.Instance.UpdateCurrentViewers(currentViewersList.Count);  
+    }
 
-        // viewers who's current StreamInterest >= min interest -> JOIN
-        // viewers who's current StreamSatisfaction <= min satisfaction -> LEAVE
+    // user reset used for single stream session when they JOIN or LEAVE stream
+    private void ResetViewer(Viewer viewer, bool isWatching){
+        viewer.IsWatching = isWatching;
+        viewer.StreamInterest = 0f;
+        viewer.StreamSatisfaction = 0f;
     }
 
     private void UpdateFollowers(){
 
+        int followersChange = 0;
+
+        foreach (Viewer viewer in currentViewersList){
+            if (!viewer.IsFollower && viewer.StreamSatisfaction >= minFollowSatisfactionReq){
+                viewer.IsFollower = true;
+                followersChange++;
+                Debug.Log(viewer.Name + " is a new follower.");
+            }
+            else if(viewer.IsFollower && viewer.StreamSatisfaction < -minFollowSatisfactionReq){
+                viewer.IsFollower = false;
+                followersChange--;
+                Debug.Log(viewer.Name + " is no longer a follower.");
+            }
+        }
+
+        GameManager.Instance.UpdateCurrentFollowers(followersChange);
     }
 
     private void UpdateSubscribers(){
 
+        int subscribersChange = 0;
+
+        // viewers can only subscribe; can't unsubscribe
+        foreach (Viewer viewer in currentViewersList){
+            if (!viewer.IsSubscribed && viewer.StreamSatisfaction >= minSubSatisfactionReq){
+                viewer.IsSubscribed = true;
+                subscribersChange++;
+                Debug.Log(viewer.Name + " is a new subscriber.");
+                // call display function for subscribers
+            }
+        }
+
+        GameManager.Instance.UpdateCurrentSubs(subscribersChange);
     }
 
     private void UpdateDonations(){
+        foreach (Viewer viewer in currentViewersList){
+            if (viewer.StreamSatisfaction >= minDonationSatisfactionReq){
+                if (viewer.IsSubscribed){
+                    HandleDonation(viewer, donationSubChance);
+                }
+                else if (viewer.IsFollower){
+                    HandleDonation(viewer, donationFollowerChance);
+                }
+                else{
+                    HandleDonation(viewer, donationBaseChance);
+                }
+            }
+        }
+    }
 
+    private void HandleDonation(Viewer viewer, float donationChance){
+
+        if (UnityEngine.Random.Range(0f, 1f) <= donationChance){
+            var donationAmount = (int)Math.Round(donationBaseAmount * UnityEngine.Random.Range(0f, 1f), 0);
+            if (donationAmount <= 0){
+                donationAmount = 1; // set to 1 so there are no $0 donations
+            }
+
+            viewer.DonationsCount++;
+            viewer.DonationsTotalSpent += donationAmount;
+            GameManager.Instance.UpdateBankroll(donationAmount);
+            Debug.Log(viewer.Name + " has donated $" + donationAmount);
+            // call display function for donations
+        }
     }
 
     private void UpdateStreamInterest(){
+
         var currentGameGenre = GameManager.Instance.GetCurrentGameGenre();
         //Debug.Log("Updating StreamInterest; current game genre is " + currentGameGenre);
 
@@ -164,7 +240,7 @@ public class ViewersManager : MonoBehaviour
 
         foreach (Viewer viewer in viewersPool){
             if (!viewer.IsWatching){
-                var rollRNG = Random.Range(0f, 1f);
+                var rollRNG = UnityEngine.Random.Range(0f, 1f);
                 //Debug.Log(viewer.Name + " has rollRNG: " + rollRNG);
 
                 float genreAffinity = 0f;
@@ -203,8 +279,8 @@ public class ViewersManager : MonoBehaviour
         }
     }
 
-
     private void UpdateStreamSatisfaction(){
+
         var currentGameGenre = GameManager.Instance.GetCurrentGameGenre();
         var currentCamSize = GameManager.Instance.GetCurrentCamSize();
     
@@ -212,8 +288,8 @@ public class ViewersManager : MonoBehaviour
 
             float gameGenreAffinity = 0f; // default value same as affinity for gameGenre == None
 
-            switch (currentGameGenre)
-            {
+             // find affinity value for current genre
+            switch (currentGameGenre){
                 case GameManager.GameGenres.RPG:
                     gameGenreAffinity = viewer.AffinityForRPG;
                     break;
@@ -231,29 +307,44 @@ public class ViewersManager : MonoBehaviour
                     break;
             }
 
-            viewer.StreamSatisfaction += CalculateSatisfaction(gameGenreAffinity, satisfactionAttReq, gameSatisfactionFactor);
-            viewer.StreamSatisfaction += CalculateSatisfaction(viewer.SocialAffinityAverage, satisfactionAttReq, socialSatisfactionFactor) * camSizeInterestMultipliers[currentCamSize];
+            viewer.StreamSatisfaction += (gameGenreAffinity - attSatisfactionReq) * gameSatisfactionFactor;
+            viewer.StreamSatisfaction += (viewer.SocialAffinityAverage - attSatisfactionReq) * socialSatisfactionFactor * camSizeInterestMultipliers[currentCamSize];
 
             Debug.Log(viewer.Name + " has StreamSatisfaction: " + viewer.StreamSatisfaction);
         }
     }
 
-    private float CalculateSatisfaction(float affinity, float breakpoint, float factor){
-        float result;
-        if (affinity > breakpoint){
-            result = affinity * factor;
-        }
-        else{
-            result = (1 - affinity) * -factor; // 1- and negative factor to get effect of negative/opposite affinity & satisfaction
-        }
+    public void HandleSocialAction(int socialActionIndex){
 
-        return result;
+        var socialAction = (GameManager.SocialActions)socialActionIndex;
+        var currentCamSize = GameManager.Instance.GetCurrentCamSize();
 
-        //return affinity > breakpoint ? affinity * factor : (1 - affinity) * -factor;
-    }
+        foreach (Viewer viewer in currentViewersList){
+            float socialActionAffinity = 0f;
 
-    public void SetCurrentViewers(){
-        currentViewers = currentViewersList.Count;
-        Debug.Log("Current viewers: " + currentViewers);
+            // find affinity value for selected action
+            switch (socialAction){
+                case GameManager.SocialActions.Flirt:
+                    socialActionAffinity = viewer.AffinityForFlirt;
+                    break;
+                case GameManager.SocialActions.Giggle:
+                    socialActionAffinity = viewer.AffinityForGiggle;
+                    break;
+                case GameManager.SocialActions.Hype:
+                    socialActionAffinity = viewer.AffinityForHype;
+                    break;
+                case GameManager.SocialActions.Rage:
+                    socialActionAffinity = viewer.AffinityForRage;
+                    break;
+
+                default:
+                    break;
+            }
+            
+            var satisfactionChange = (socialActionAffinity - attSatisfactionReq) * socialActionMultiplier * camSizeInterestMultipliers[currentCamSize];
+            viewer.StreamSatisfaction += satisfactionChange;
+
+            Debug.Log(viewer.Name + "'s StreamSatisfaction changed " + satisfactionChange + " due to " + socialAction + " social action.");
+        }        
     }
 }

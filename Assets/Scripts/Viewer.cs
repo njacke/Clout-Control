@@ -11,7 +11,7 @@ public class Viewer
 
     public bool IsWatching { get; set; } = false;
 
-    public bool IsFollowing { get; set; } = false;
+    public bool IsFollower { get; set; } = false;
 
     public bool IsSubscribed { get; set; } = false;
 
@@ -19,7 +19,9 @@ public class Viewer
 
     public float StreamSatisfaction { get; set; } = 0f;
 
-    public float DonatedAmount { get; set; } = 0f;
+    public float DonationsCount { get; set; } = 0f;
+
+    public float DonationsTotalSpent { get; set; } = 0f;
 
     // gaming actions affinity
     public float AffinityForRPG { get; set; } = 0f;
@@ -34,8 +36,7 @@ public class Viewer
         get { return (AffinityForRPG + AffinityForArcade + AffinityForAction + AffinityForSimulation) / 4; }
     }
 
-
-// social actions affinity
+    // social actions affinity
     public float AffinityForFlirt { get; set; } = 0f;
 
     public float AffinityForGiggle { get; set; } = 0f;

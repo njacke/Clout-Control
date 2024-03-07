@@ -1,45 +1,55 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
-using UnityEngine.Events;
-using System;
 using TMPro;
+using UnityEngine.UI;
 
 public class SocialActionController : MonoBehaviour
 {
-    public TMP_Dropdown dropdown;
-    private int activeAction;
-    private bool isOnCooldown;
+    ViewersManager viewersManager;
+    private TMP_Dropdown dropdown;
+    private Slider slider;
+    private bool isOnCD;
     float cooldownDuration = 5f;
     float cooldownRemaining;
     
-    void Start()
-    {
-        dropdown = GetComponent<TMP_Dropdown>();
+    void Start(){
+        viewersManager = FindObjectOfType<ViewersManager>();
+
+        dropdown = GetComponentInChildren<TMP_Dropdown>();
         dropdown.onValueChanged.AddListener(StartAction);
+
+        slider = GetComponentInChildren<Slider>();
+
     }
 
-    void Update()
-    {
-        if (isOnCooldown && cooldownRemaining > 0){
+    void Update(){
+        if (isOnCD && cooldownRemaining > 0){
             cooldownRemaining -= Time.deltaTime;
+            slider.value = cooldownRemaining / cooldownDuration;
         }
 
-        else{            
-            isOnCooldown = false;
-            cooldownRemaining = cooldownDuration;
+        else if (isOnCD){            
+            isOnCD = false;
+            dropdown.value = 0;
+            dropdown.interactable = true;
             //Debug.Log("Cooldown finished. New action available.");
         }
     }
 
     public void StartAction(int value){
-        Debug.Log("Selected action with index of " + value);
+        GameManager.Instance.SetCurrentSocialAction(value);
 
-        if (value == 0){
-            isOnCooldown = true;
-            Debug.Log("Switching to " + " game");
-            Debug.Log("Remaining cooldown is " + cooldownDuration + " seconds");
+        // if social action is not NONE
+        if(value != 0){
+            isOnCD = true;
+            cooldownRemaining = cooldownDuration;
+            dropdown.interactable = false;
+            viewersManager.HandleSocialAction(value);
+
+            //actionResetDone = false;
+
+            Debug.Log("Selected social action with index of " + value);
         }
     }
 }
