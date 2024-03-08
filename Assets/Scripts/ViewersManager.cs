@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using Unity.VisualScripting;
 using Unity.VisualScripting.FullSerializer;
@@ -8,10 +9,13 @@ using UnityEngine;
 
 public class ViewersManager : MonoBehaviour
 {
+    private NotificationsDisplay notificationsDisplay;
     // VIEWERS
     private Viewer [] viewersPool;
     private List<Viewer> currentViewersList = new();
-    private float updateViewersCD = 5f;
+    private HashSet<int> viewersIndexHash = new();
+    private HashSet<int> nonViewersIndexHash = new();
+    private float updateViewersCD = 1f;
     private float remainingUpdateViewersCD;
 
     // INITIAL
@@ -19,7 +23,7 @@ public class ViewersManager : MonoBehaviour
     private float followerInitialViewChance = 0.5f;
 
     // INTEREST
-    private float minViewInterestReq = 0.5f;
+    private float minViewInterestReq = 0.7f;
 
     // SATISFACTION
     private float attSatisfactionReq = 0.5f;
@@ -30,20 +34,20 @@ public class ViewersManager : MonoBehaviour
     private float remainingUpdateSatisfactionCD;
     
     // FOLLOWERS
-    private float minFollowSatisfactionReq = 0.5f;
+    private float minFollowSatisfactionReq = 1f;
     private float updateFollowersCD = 1f;
     private float remainingUpdateFollowersCD;
 
     // SUBSCRIBERS
-    private float minSubSatisfactionReq = 1f;
+    private float minSubSatisfactionReq = 2f;
     private float updateSubscribersCD = 1f;
     private float remainingUpdateSubscribersCD;
 
     // DONATIONS
-    private float minDonationSatisfactionReq = 0.5f;
-    private float donationBaseChance = 0.4f;
-    private float donationFollowerChance = 0.6f;
-    private float donationSubChance = 0.8f;
+    private float minDonationSatisfactionReq = 1f;
+    private float donationBaseChance = 0.01f;
+    private float donationFollowerChance = 0.02f;
+    private float donationSubChance = 0.04f;
     private float donationBaseAmount = 100f;
     private float updateDonationsCD = 2f;
     private float remainingUpdateDonationsCD;
@@ -60,6 +64,12 @@ public class ViewersManager : MonoBehaviour
     void Start(){
 
         viewersPool = GameManager.Instance.GetViewersPool();
+        notificationsDisplay = FindObjectOfType<NotificationsDisplay>();
+
+        // add all indexes of viewers in viewer pool as non viewers [OPTIMISATION EXAMPLE, NOT USED ATM]
+        /* for(int i = 0; i < viewersPool.Length; i++){
+            nonViewersIndexHash.Add(i);
+        } */
 
         remainingUpdateViewersCD = updateViewersCD;
         remainingUpdateSatisfactionCD = updateSatisfationCD;
@@ -111,6 +121,36 @@ public class ViewersManager : MonoBehaviour
         }        
     }
 
+    // [OPTIMISATION EXAMPLE, NOT USED ATM]
+    // add initial viewers from pool of subscribers and (non-sub) followers
+    private void SetInitialViewersNew(){
+
+        var subsIndexHash = GameManager.Instance.GetSubsIndexHash();
+
+        // assign new viewers from subscribers
+        foreach (int subIndex in subsIndexHash){
+            var rollRNG = UnityEngine.Random.Range(0f, 1f); //can optimise with "fake RNG" -> randomly select sample to add 
+            if (rollRNG <= subInitialViewChance){
+                nonViewersIndexHash.Remove(subIndex);
+                viewersIndexHash.Add(subIndex);
+            }
+        }
+
+        // assign new viewers from (non-sub) followers
+        var followersIndexHash = GameManager.Instance.GetFollowersIndexHash();       
+        var nonSubFollowersIndexHash = new HashSet<int>(followersIndexHash.Where(x => !subsIndexHash.Contains(x)));
+
+        foreach (int nonSubFollowerIndex in nonSubFollowersIndexHash){
+            var rollRNG = UnityEngine.Random.Range(0f, 1f);
+            if (rollRNG <= followerInitialViewChance){
+                nonViewersIndexHash.Remove(nonSubFollowerIndex);
+                viewersIndexHash.Add(nonSubFollowerIndex);
+            }
+        }
+
+        GameManager.Instance.UpdateCurrentViewers(viewersIndexHash.Count);
+    }
+
     // add initial viewers from pool of subscribers and followers
     private void SetInitialViewers(){
 
@@ -119,15 +159,55 @@ public class ViewersManager : MonoBehaviour
             var rollRNG = UnityEngine.Random.Range(0f, 1f);
 
             if(viewer.IsSubscribed && rollRNG <= subInitialViewChance){
-                ResetViewer(viewer, true);                
+                viewer.IsWatching = true;             
                 currentViewersList.Add(viewer);
             }
 
             else if(viewer.IsFollower && rollRNG <= followerInitialViewChance){
-                ResetViewer(viewer, true);
+                viewer.IsWatching = true;
                 currentViewersList.Add(viewer);
             }
         }
+
+        GameManager.Instance.UpdateCurrentViewers(currentViewersList.Count);  
+    }
+
+    // [OPTIMISATION EXAMPLE, NOT USED ATM]
+    private void UpdateViewersNew(){
+
+        UpdateStreamInterest();
+
+        var newNonViewersIndexHash = new HashSet<int>();
+        var newViewerIndexHash = new HashSet<int>();
+
+        var followersIndexHash = GameManager.Instance.GetFollowersIndexHash();
+        var nonFollowerViewersIndexHash = new HashSet<int>(viewersIndexHash.Where(x => !followersIndexHash.Contains(x)));
+
+        // LEAVE stream
+        foreach (int nonFollowerViewerIndex in viewersIndexHash){ //can optimise by keeping another hash of non viewers with enough interest
+            if(viewersPool[nonFollowerViewerIndex].StreamSatisfaction < minViewSatisfactionReq){
+                newNonViewersIndexHash.Add(nonFollowerViewerIndex);
+                ResetViewerNew(viewersPool[nonFollowerViewerIndex]); //reset interest + satisfaction when leaving stream
+            }
+            else{
+                newViewerIndexHash.Add(nonFollowerViewerIndex);
+            }
+        }
+
+        // JOIN stream
+        foreach (int nonViewerIndex in nonViewersIndexHash){
+            if(viewersPool[nonViewerIndex].StreamInterest >= minViewInterestReq){
+                newViewerIndexHash.Add(nonViewerIndex);
+            }
+            else{
+                newNonViewersIndexHash.Add(nonViewerIndex);
+            }
+        }
+
+        nonViewersIndexHash = newNonViewersIndexHash;
+        viewersIndexHash = newNonViewersIndexHash;
+
+        GameManager.Instance.UpdateCurrentViewers(viewersIndexHash.Count);
     }
 
     private void UpdateViewers(){
@@ -139,25 +219,32 @@ public class ViewersManager : MonoBehaviour
             // non-followers who's current StreamSatisfaction <= min satisfaction -> LEAVE
             // followers will leave after next UpdateFollowers if they unfollow since -minFollowSatisfaction < minViewSatisfation (can add check if needed)
             if(viewer.IsWatching && !viewer.IsFollower && viewer.StreamSatisfaction < minViewSatisfactionReq){
-                ResetViewer(viewer, false);
+                ResetViewer(viewer); //reset when leving stream
                 currentViewersList.Remove(viewer);
-                Debug.Log("Viewer stopped watching: " + viewer.Name);
+                //Debug.Log("Viewer stopped watching: " + viewer.Name);
             }
 
             // viewers who's current StreamInterest >= min interest -> JOIN
             else if (!viewer.IsWatching && viewer.StreamInterest >= minViewInterestReq){
-                ResetViewer(viewer, true);
+                viewer.IsWatching = true;
                 currentViewersList.Add(viewer);
-                Debug.Log("New viewer has joined: " + viewer.Name);
+                //Debug.Log("New viewer has joined: " + viewer.Name);
             }
         }
 
         GameManager.Instance.UpdateCurrentViewers(currentViewersList.Count);  
     }
 
+    // user reset used for single stream session when they JOIN or LEAVE stream [OPTIMISATION EXAMPLE, NOT USED ATM]
+    private void ResetViewerNew(Viewer viewer){
+        viewer.StreamInterest = 0f;
+        viewer.StreamSatisfaction = 0f;
+    }
+
+
     // user reset used for single stream session when they JOIN or LEAVE stream
-    private void ResetViewer(Viewer viewer, bool isWatching){
-        viewer.IsWatching = isWatching;
+    private void ResetViewer(Viewer viewer){
+        viewer.IsWatching = false;
         viewer.StreamInterest = 0f;
         viewer.StreamSatisfaction = 0f;
     }
@@ -191,11 +278,10 @@ public class ViewersManager : MonoBehaviour
             if (!viewer.IsSubscribed && viewer.StreamSatisfaction >= minSubSatisfactionReq){
                 viewer.IsSubscribed = true;
                 subscribersChange++;
+                notificationsDisplay.UpdateNotifications(viewer.Name, 0, false);
                 Debug.Log(viewer.Name + " is a new subscriber.");
-                // call display function for subscribers
             }
         }
-
         GameManager.Instance.UpdateCurrentSubs(subscribersChange);
     }
 
@@ -227,7 +313,20 @@ public class ViewersManager : MonoBehaviour
             viewer.DonationsTotalSpent += donationAmount;
             GameManager.Instance.UpdateBankroll(donationAmount);
             Debug.Log(viewer.Name + " has donated $" + donationAmount);
-            // call display function for donations
+
+            notificationsDisplay.UpdateNotifications(viewer.Name, donationAmount, true);
+
+            var topDLog = GameManager.Instance.GetTopDLog();
+
+            if (topDLog.Any()){
+                if (donationAmount > topDLog.Last().Amount){
+                    GameManager.Instance.UpdateTopDLog(viewer, donationAmount);
+                    Debug.Log("Top D log updated.");
+                }
+            }
+            else{
+                GameManager.Instance.UpdateTopDLog(viewer, donationAmount);
+            }
         }
     }
 
@@ -259,6 +358,7 @@ public class ViewersManager : MonoBehaviour
                     case GameManager.GameGenres.Simulation:
                         genreAffinity = viewer.AffinityForSimulation;
                         break;
+
                     default:
                         break;
                 }
@@ -274,7 +374,7 @@ public class ViewersManager : MonoBehaviour
                     viewer.StreamInterest = socialInterest;
                 }
 
-                Debug.Log(viewer.Name + " has StreamInterest: " + viewer.StreamInterest);
+                //Debug.Log(viewer.Name + " has StreamInterest: " + viewer.StreamInterest);
             }
         }
     }
@@ -344,7 +444,7 @@ public class ViewersManager : MonoBehaviour
             var satisfactionChange = (socialActionAffinity - attSatisfactionReq) * socialActionMultiplier * camSizeInterestMultipliers[currentCamSize];
             viewer.StreamSatisfaction += satisfactionChange;
 
-            Debug.Log(viewer.Name + "'s StreamSatisfaction changed " + satisfactionChange + " due to " + socialAction + " social action.");
+            //Debug.Log(viewer.Name + "'s StreamSatisfaction changed " + satisfactionChange + " due to " + socialAction + " social action.");
         }        
     }
 }

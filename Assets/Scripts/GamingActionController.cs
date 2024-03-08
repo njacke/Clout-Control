@@ -6,13 +6,16 @@ using UnityEngine.UI;
 
 public class GamingActionController : MonoBehaviour
 {
+    GameImageController gameImageController;
     private TMP_Dropdown dropdown;
     private Slider slider;
     private bool isOnCD;
-    float cooldownDuration = 5f;
+    float cooldownDuration = 10f;
     float cooldownRemaining;
     
     void Start(){
+        gameImageController = FindObjectOfType<GameImageController>();
+
         dropdown = GetComponentInChildren<TMP_Dropdown>();
         dropdown.onValueChanged.AddListener(StartAction);
 
@@ -33,7 +36,10 @@ public class GamingActionController : MonoBehaviour
     }
 
     public void StartAction(int value){
+        var previousGameGenere = GameManager.Instance.GetCurrentGameGenre();
         GameManager.Instance.SetCurrentGameGenre(value);
+
+        StartCoroutine(gameImageController.ChangeGameImage(previousGameGenere));
 
         isOnCD = true;
         cooldownRemaining = cooldownDuration;

@@ -10,7 +10,7 @@ public class CameraActionController : MonoBehaviour
     private TMP_Dropdown dropdown;
     private Slider slider;
     private bool isOnCD;
-    private float cooldownDuration = 5f;
+    private float cooldownDuration = 1f;
     private float cooldownRemaining;
     
     void Start(){
@@ -39,7 +39,7 @@ public class CameraActionController : MonoBehaviour
 
         GameManager.Instance.SetCurrentCamSize(value);
 
-        StartCoroutine(cameraImageController.ScaleCameraSize());
+        StartCoroutine(cameraImageController.ScaleCameraImageSize());
 
         isOnCD = true;
         cooldownRemaining = cooldownDuration;
