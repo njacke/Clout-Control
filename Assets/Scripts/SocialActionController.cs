@@ -10,7 +10,7 @@ public class SocialActionController : MonoBehaviour
     private TMP_Dropdown dropdown;
     private Slider slider;
     private bool isOnCD;
-    float cooldownDuration = 5f;
+    float cooldownDuration = 10f;
     float cooldownRemaining;
     
     void Start(){
@@ -41,7 +41,7 @@ public class SocialActionController : MonoBehaviour
         GameManager.Instance.SetCurrentSocialAction(value);
 
         // if social action is not NONE
-        if(value != 0){
+        if (value != 0){
             isOnCD = true;
             cooldownRemaining = cooldownDuration;
             dropdown.interactable = false;

@@ -3,18 +3,23 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
+using System.Linq;
 
 public class GamingActionController : MonoBehaviour
 {
     GameImageController gameImageController;
+    ViewersManager viewersManager;
+    ChatDisplay chatDisplay;
     private TMP_Dropdown dropdown;
     private Slider slider;
     private bool isOnCD;
-    float cooldownDuration = 10f;
+    float cooldownDuration = 20f;
     float cooldownRemaining;
     
     void Start(){
         gameImageController = FindObjectOfType<GameImageController>();
+        viewersManager = FindObjectOfType<ViewersManager>();
+        chatDisplay = FindObjectOfType<ChatDisplay>();
 
         dropdown = GetComponentInChildren<TMP_Dropdown>();
         dropdown.onValueChanged.AddListener(StartAction);
@@ -40,6 +45,14 @@ public class GamingActionController : MonoBehaviour
         GameManager.Instance.SetCurrentGameGenre(value);
 
         StartCoroutine(gameImageController.ChangeGameImage(previousGameGenere));
+
+        List<Viewer> currentViewersList = viewersManager.GetCurrentViewersList();
+
+        if (currentViewersList.Any()){
+
+            var randomIndex = Random.Range(0, currentViewersList.Count);        
+            chatDisplay.UpdateChatDisplay(currentViewersList[randomIndex], ChatDisplay.MessageType.GameChange);
+        }
 
         isOnCD = true;
         cooldownRemaining = cooldownDuration;

@@ -10,20 +10,32 @@ using UnityEngine;
 public class ViewersManager : MonoBehaviour
 {
     private NotificationsDisplay notificationsDisplay;
+    private ChatDisplay chatDisplay;
+    private bool streamActive = true;
+
     // VIEWERS
     private Viewer [] viewersPool;
+    int poolSize;
     private List<Viewer> currentViewersList = new();
     private HashSet<int> viewersIndexHash = new();
     private HashSet<int> nonViewersIndexHash = new();
     private float updateViewersCD = 1f;
-    private float remainingUpdateViewersCD;
+    private float updateViewersCDRemaining;
+
+    // STATS
+    private int sesViewersPeak = 0;
+    private int sesFollowersChange = 0;
+    private int sesSubscribersChange = 0;
+    private int sesDonationsCount = 0;
+    private int sesDonationsAmountTotal = 0;
 
     // INITIAL
+    private bool initialViewersSet = false;
     private float subInitialViewChance = 0.8f;
     private float followerInitialViewChance = 0.5f;
 
     // INTEREST
-    private float minViewInterestReq = 0.7f;
+    private float minViewInterestReq = 0.9f;
 
     // SATISFACTION
     private float attSatisfactionReq = 0.5f;
@@ -31,17 +43,17 @@ public class ViewersManager : MonoBehaviour
     private float gameSatisfactionFactor = 0.1f;
     private float socialSatisfactionFactor = 0.1f;
     private float updateSatisfationCD = 1f;
-    private float remainingUpdateSatisfactionCD;
+    private float updateSatisfactionCDRemaining;
     
     // FOLLOWERS
-    private float minFollowSatisfactionReq = 1f;
+    private float minFollowSatisfactionReq = 2f;
     private float updateFollowersCD = 1f;
-    private float remainingUpdateFollowersCD;
+    private float updateFollowersCDRemaining;
 
     // SUBSCRIBERS
-    private float minSubSatisfactionReq = 2f;
+    private float minSubSatisfactionReq = 4f;
     private float updateSubscribersCD = 1f;
-    private float remainingUpdateSubscribersCD;
+    private float updateSubscribersCDRemaining;
 
     // DONATIONS
     private float minDonationSatisfactionReq = 1f;
@@ -50,7 +62,14 @@ public class ViewersManager : MonoBehaviour
     private float donationSubChance = 0.04f;
     private float donationBaseAmount = 100f;
     private float updateDonationsCD = 2f;
-    private float remainingUpdateDonationsCD;
+    private float updateDonationsCDRemaining;
+
+    // MESSAGES
+    private float subAndDonoMessageChance = 0.5f;
+    private float socialActioMsgAffReq = 0.6f;
+    private float satisfactionMsgBreakpoint = 0.5f;
+    private float updateChatCD = 2f;
+    private float updateChatCDRemaining;
 
     // MULTIPLIERS
     private float socialActionMultiplier = 1f;
@@ -58,68 +77,88 @@ public class ViewersManager : MonoBehaviour
 
         {GameManager.CamSizes.Small, 0.5f},
         {GameManager.CamSizes.Medium, 1f},
-        {GameManager.CamSizes.Large, 2f}
+        {GameManager.CamSizes.Large, 1.25f}
     };
 
     void Start(){
 
         viewersPool = GameManager.Instance.GetViewersPool();
+        poolSize = viewersPool.Length;
         notificationsDisplay = FindObjectOfType<NotificationsDisplay>();
+        chatDisplay = FindObjectOfType<ChatDisplay>();
 
         // add all indexes of viewers in viewer pool as non viewers [OPTIMISATION EXAMPLE, NOT USED ATM]
         /* for(int i = 0; i < viewersPool.Length; i++){
             nonViewersIndexHash.Add(i);
         } */
 
-        remainingUpdateViewersCD = updateViewersCD;
-        remainingUpdateSatisfactionCD = updateSatisfationCD;
-        remainingUpdateFollowersCD = updateFollowersCD;
-        remainingUpdateSubscribersCD = updateSubscribersCD;
-        remainingUpdateDonationsCD = updateDonationsCD;
+        updateViewersCDRemaining = updateViewersCD;
+        updateSatisfactionCDRemaining = updateSatisfationCD;
+        updateFollowersCDRemaining = updateFollowersCD;
+        updateSubscribersCDRemaining = updateSubscribersCD;
+        updateDonationsCDRemaining = updateDonationsCD;
+        updateChatCDRemaining = updateChatCD;
     }
 
     void Update(){
-        
-        // viewers update
-        remainingUpdateViewersCD -= Time.deltaTime;
-        if(remainingUpdateViewersCD <= 0){
-            UpdateViewers();
-            remainingUpdateViewersCD = updateViewersCD;
-            //Debug.Log("Viewers updated.");
+
+        if(!initialViewersSet){
+            SetInitialViewers();
+            initialViewersSet = true;
         }
 
-        // satisfaction update
-        remainingUpdateSatisfactionCD -= Time.deltaTime;
-        if(remainingUpdateSatisfactionCD <= 0){
-            UpdateStreamSatisfaction();
-            remainingUpdateSatisfactionCD = updateSatisfationCD;
-            //Debug.Log("StreamSatisfaction updated.");
-        }
+        if(streamActive){
+            // viewers update
+            updateViewersCDRemaining -= Time.deltaTime;
+            if(updateViewersCDRemaining <= 0){
+                UpdateViewers();
+                updateViewersCDRemaining = updateViewersCD;
+                //Debug.Log("Viewers updated.");
+            }
 
-        // followers update
-        remainingUpdateFollowersCD -= Time.deltaTime;
-        if(remainingUpdateFollowersCD <= 0){
-            UpdateFollowers();
-            remainingUpdateFollowersCD = updateFollowersCD;
-            //Debug.Log("Followers updated.");
-        }
+            // satisfaction update
+            updateSatisfactionCDRemaining -= Time.deltaTime;
+            if(updateSatisfactionCDRemaining <= 0){
+                UpdateStreamSatisfaction();
+                updateSatisfactionCDRemaining = updateSatisfationCD;
+                //Debug.Log("StreamSatisfaction updated.");
+            }
 
-        // subscribers update
-        remainingUpdateSubscribersCD -= Time.deltaTime;
-        if(remainingUpdateSubscribersCD <= 0){
-            UpdateSubscribers();
-            remainingUpdateSubscribersCD = updateSubscribersCD;
-            //Debug.Log("Subscribers updated.");
-        }
+            // followers update
+            updateFollowersCDRemaining -= Time.deltaTime;
+            if(updateFollowersCDRemaining <= 0){
+                UpdateFollowers();
+                updateFollowersCDRemaining = updateFollowersCD;
+                //Debug.Log("Followers updated.");
+            }
 
-        // donations update
-        remainingUpdateDonationsCD -= Time.deltaTime;
-        if(remainingUpdateDonationsCD <= 0){
-            UpdateDonations();
-            remainingUpdateDonationsCD = updateDonationsCD;
-            //Debug.Log("Donations updated");
-        }        
+            // subscribers update
+            updateSubscribersCDRemaining -= Time.deltaTime;
+            if(updateSubscribersCDRemaining <= 0){
+                UpdateSubscribers();
+                updateSubscribersCDRemaining = updateSubscribersCD;
+                //Debug.Log("Subscribers updated.");
+            }
+
+            // donations update
+            updateDonationsCDRemaining -= Time.deltaTime;
+            if(updateDonationsCDRemaining <= 0){
+                UpdateDonations();
+                updateDonationsCDRemaining = updateDonationsCD;
+                //Debug.Log("Donations updated");
+            }
+
+            // chat passive update
+            updateChatCDRemaining -= Time.deltaTime;
+            if(updateChatCDRemaining <= 0){
+                UpdateChatPassive();
+                updateChatCDRemaining = updateChatCD;
+                //Debug.Log("Passive chat updated.");
+            }
+        } 
     }
+
+    // PRIVATE METHODS
 
     // [OPTIMISATION EXAMPLE, NOT USED ATM]
     // add initial viewers from pool of subscribers and (non-sub) followers
@@ -169,7 +208,8 @@ public class ViewersManager : MonoBehaviour
             }
         }
 
-        GameManager.Instance.UpdateCurrentViewers(currentViewersList.Count);  
+        sesViewersPeak = currentViewersList.Count; 
+        GameManager.Instance.UpdateCurrentViewers(currentViewersList.Count);
     }
 
     // [OPTIMISATION EXAMPLE, NOT USED ATM]
@@ -232,6 +272,10 @@ public class ViewersManager : MonoBehaviour
             }
         }
 
+        if(currentViewersList.Count > sesViewersPeak){
+            sesViewersPeak = currentViewersList.Count;
+        }
+
         GameManager.Instance.UpdateCurrentViewers(currentViewersList.Count);  
     }
 
@@ -266,6 +310,7 @@ public class ViewersManager : MonoBehaviour
             }
         }
 
+        sesFollowersChange += followersChange;
         GameManager.Instance.UpdateCurrentFollowers(followersChange);
     }
 
@@ -278,10 +323,17 @@ public class ViewersManager : MonoBehaviour
             if (!viewer.IsSubscribed && viewer.StreamSatisfaction >= minSubSatisfactionReq){
                 viewer.IsSubscribed = true;
                 subscribersChange++;
-                notificationsDisplay.UpdateNotifications(viewer.Name, 0, false);
                 Debug.Log(viewer.Name + " is a new subscriber.");
+
+                notificationsDisplay.UpdateNotifications(viewer.Name, 0, false);
+
+                if (UnityEngine.Random.Range(0, 1f) < subAndDonoMessageChance){
+                    chatDisplay.UpdateChatDisplay(viewer, ChatDisplay.MessageType.NewSub);
+                }
             }
         }
+
+        sesSubscribersChange += subscribersChange;
         GameManager.Instance.UpdateCurrentSubs(subscribersChange);
     }
 
@@ -311,17 +363,25 @@ public class ViewersManager : MonoBehaviour
 
             viewer.DonationsCount++;
             viewer.DonationsTotalSpent += donationAmount;
+
+            sesDonationsCount++;
+            sesDonationsAmountTotal += donationAmount;
             GameManager.Instance.UpdateBankroll(donationAmount);
             Debug.Log(viewer.Name + " has donated $" + donationAmount);
 
             notificationsDisplay.UpdateNotifications(viewer.Name, donationAmount, true);
 
+            if (UnityEngine.Random.Range(0, 1f) < subAndDonoMessageChance){
+                chatDisplay.UpdateChatDisplay(viewer, ChatDisplay.MessageType.NewDonation);
+            }
+
+            // check if Top D
             var topDLog = GameManager.Instance.GetTopDLog();
 
             if (topDLog.Any()){
                 if (donationAmount > topDLog.Last().Amount){
                     GameManager.Instance.UpdateTopDLog(viewer, donationAmount);
-                    Debug.Log("Top D log updated.");
+                    //Debug.Log("Top D log updated.");
                 }
             }
             else{
@@ -365,6 +425,7 @@ public class ViewersManager : MonoBehaviour
 
                 if (viewer.StreamInterest < genreAffinity * rollRNG){
                     viewer.StreamInterest = genreAffinity * rollRNG;
+                    //Debug.Log(viewer.Name + "'s stream interest before social is " + viewer.StreamInterest);
                 }
 
                 // set interest based on average social affinity & camSize
@@ -373,6 +434,9 @@ public class ViewersManager : MonoBehaviour
                 if (viewer.StreamInterest < socialInterest){
                     viewer.StreamInterest = socialInterest;
                 }
+
+                // adjust interest based on how many viewers are on stream compared to total pool
+                viewer.StreamInterest *= currentViewersList.Count / poolSize + 1;
 
                 //Debug.Log(viewer.Name + " has StreamInterest: " + viewer.StreamInterest);
             }
@@ -410,9 +474,32 @@ public class ViewersManager : MonoBehaviour
             viewer.StreamSatisfaction += (gameGenreAffinity - attSatisfactionReq) * gameSatisfactionFactor;
             viewer.StreamSatisfaction += (viewer.SocialAffinityAverage - attSatisfactionReq) * socialSatisfactionFactor * camSizeInterestMultipliers[currentCamSize];
 
-            Debug.Log(viewer.Name + " has StreamSatisfaction: " + viewer.StreamSatisfaction);
+            //Debug.Log(viewer.Name + " has StreamSatisfaction: " + viewer.StreamSatisfaction);
         }
     }
+
+    private void UpdateChatPassive(){
+
+        if (currentViewersList.Any()){
+
+            var eligibleSatViewerList = currentViewersList.Where(
+                                        viewer => viewer.StreamSatisfaction >= satisfactionMsgBreakpoint || viewer.StreamSatisfaction < -satisfactionMsgBreakpoint).ToList();
+
+            if (eligibleSatViewerList.Any()){
+                var randomIndexGeneral = UnityEngine.Random.Range(0, eligibleSatViewerList.Count);
+                chatDisplay.UpdateChatDisplay(eligibleSatViewerList[randomIndexGeneral], ChatDisplay.MessageType.General);
+
+                var randomIndexGamePlay = UnityEngine.Random.Range(0, eligibleSatViewerList.Count);
+                chatDisplay.UpdateChatDisplay(eligibleSatViewerList[randomIndexGamePlay], ChatDisplay.MessageType.GamePlay);
+            }
+        }
+    }
+
+    // PUBLIC METHODS
+
+    public void SetStreamActive(bool state){
+        streamActive = state;
+    }        
 
     public void HandleSocialAction(int socialActionIndex){
 
@@ -420,11 +507,35 @@ public class ViewersManager : MonoBehaviour
         var currentCamSize = GameManager.Instance.GetCurrentCamSize();
 
         foreach (Viewer viewer in currentViewersList){
-            float socialActionAffinity = 0f;
 
-            // find affinity value for selected action
-            switch (socialAction){
-                case GameManager.SocialActions.Flirt:
+            float socialActionAffinity = GetViewerSocialAffinity(socialAction, viewer);
+            
+            var satisfactionChange = (socialActionAffinity - attSatisfactionReq) * socialActionMultiplier * camSizeInterestMultipliers[currentCamSize];
+            viewer.StreamSatisfaction += satisfactionChange;
+
+            //Debug.Log(viewer.Name + "'s StreamSatisfaction changed " + satisfactionChange + " due to " + socialAction + " social action.");
+
+        }
+
+        if (currentViewersList.Any()){
+
+            var positiveSocialAffList = currentViewersList.Where(viewer => GetViewerSocialAffinity(socialAction, viewer) > socialActioMsgAffReq).ToList();
+
+            //Debug.Log("positiveSocialAffList count is " + positiveSocialAffList.Count);
+
+            if(positiveSocialAffList.Any()){
+                var randomIndex = UnityEngine.Random.Range(0, positiveSocialAffList.Count);
+                chatDisplay.UpdateChatDisplay(positiveSocialAffList[randomIndex], ChatDisplay.MessageType.SocialAction);
+                //Debug.Log("UpdateCHatDisplay called for Social Action");
+            }
+        }
+    }
+
+    private float GetViewerSocialAffinity(GameManager.SocialActions socialAction, Viewer viewer){
+    float socialActionAffinity = 0f;
+
+        switch (socialAction){
+            case GameManager.SocialActions.Flirt:
                     socialActionAffinity = viewer.AffinityForFlirt;
                     break;
                 case GameManager.SocialActions.Giggle:
@@ -437,14 +548,34 @@ public class ViewersManager : MonoBehaviour
                     socialActionAffinity = viewer.AffinityForRage;
                     break;
 
-                default:
-                    break;
-            }
-            
-            var satisfactionChange = (socialActionAffinity - attSatisfactionReq) * socialActionMultiplier * camSizeInterestMultipliers[currentCamSize];
-            viewer.StreamSatisfaction += satisfactionChange;
+            default:
+                break;
+        }
 
-            //Debug.Log(viewer.Name + "'s StreamSatisfaction changed " + satisfactionChange + " due to " + socialAction + " social action.");
-        }        
+    return socialActionAffinity;
+    }
+
+    public List<Viewer> GetCurrentViewersList(){
+        return currentViewersList;
+    }
+
+    public int GetSesViewersPeak(){
+        return sesViewersPeak;
+    }
+
+    public int GetSesFollowersChange(){
+        return sesFollowersChange;
+    }
+
+    public int GetSesSubscribersChange(){
+        return sesSubscribersChange;
+    }
+
+    public int GetSesDonationsCount(){
+        return sesDonationsCount;
+    }
+
+    public int GetSesDonationsAmountTotal(){
+        return sesDonationsAmountTotal;
     }
 }

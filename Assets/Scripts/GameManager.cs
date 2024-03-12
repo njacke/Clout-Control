@@ -4,15 +4,20 @@ using System.Collections.Generic;
 using System.Linq;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
+    private SceneLoader sceneLoader;
+    private ViewersManager viewersManager;
     private StatsDisplay statsDisplay;
+    private bool resetDone = false;
+    private float sessionEndDelay = 2f;
 
     // VIEWER POOL
     private string[] viewersNames = {
-        "James", "William", "Robert", "John", "David", "Richard", "Joseph", "Charles", "Thomas", "Christopher",
+        "James", "William", "Robert", "John", "David", "Richard", "Joseph", "Charles", "Thomas", "Christoph",
         "Daniel", "Matthew", "Anthony", "Mark", "Donald", "Steven", "Paul", "Andrew", "Kenneth", "George",
         "Joshua", "Kevin", "Brian", "Edward", "Ronald", "Timothy", "Jason", "Larry", "Jeffrey", "Frank",
         "Scott", "Eric", "Stephen", "Raymond", "Gregory", "Joshua", "Dennis", "Jerry", "Walter", "Patrick",
@@ -32,7 +37,7 @@ public class GameManager : MonoBehaviour
     // [OPTIMISATION DATA STRUCTURES, NOT USED ATM]
     private HashSet<int> followersIndexHash = new HashSet<int>();
     private HashSet<int> subsIndexHash = new HashSet<int>();
-    private Dictionary<int, int> donationsSpentDict = new Dictionary<int, int>();
+    private Dictionary<int, int> donationsSpentDict = new Dictionary<int, int>();   
 
     // SOCIAL
     public enum SocialActions{
@@ -65,12 +70,19 @@ public class GameManager : MonoBehaviour
 
     CamSizes currentCamSize = CamSizes.Small;
 
-    // STATS
+    // PERM STATS
     private int currentViewers = 0;
     private int currentFollowers = 0;
     private int currentSubs = 0;
     private int currentBankroll = 0;
     private List<TopDLogEntry> topDLog = new List<TopDLogEntry>();
+
+    // TEMP STATS
+    private int lastSesViewersPeak = 0;
+    private int lastSesFollowersChange = 0;
+    private int lastSesSubscribersChange = 0;
+    private int lastSesDonationsCount = 0;
+    private int lastSesDonationsAmountTotal = 0;
 
     void Awake(){
         if (Instance == null){
@@ -89,18 +101,26 @@ public class GameManager : MonoBehaviour
         }        
     }
 
-    void Start(){
-        statsDisplay = FindObjectOfType<StatsDisplay>();
+    void Update(){
 
-        statsDisplay.UpdateViewersDisplay(currentViewers);
-        statsDisplay.UpdateFollowersDisplay(currentFollowers);
-        statsDisplay.UpdateSubscribersDisplay(currentSubs);
+        if (SceneManager.GetActiveScene().buildIndex == 1 && !resetDone ){
 
-        if (topDLog.Any()){
-            statsDisplay.UpdateTopDDisplay(topDLog.Last().Viewer.Name, topDLog.Last().Amount);
-        }
-        else{
-            statsDisplay.UpdateTopDDisplay("hobo", 0);
+            statsDisplay = FindObjectOfType<StatsDisplay>();
+            viewersManager = FindObjectOfType<ViewersManager>();
+            sceneLoader = FindObjectOfType<SceneLoader>();
+
+            statsDisplay.UpdateViewersDisplay(currentViewers);
+            statsDisplay.UpdateFollowersDisplay(currentFollowers);
+            statsDisplay.UpdateSubscribersDisplay(currentSubs);
+
+            if (topDLog.Any()){
+                statsDisplay.UpdateTopDDisplay(topDLog.Last().Viewer.Name, topDLog.Last().Amount);
+            }
+            else{
+                statsDisplay.UpdateTopDDisplay("hobo", 0);
+            }
+
+            resetDone = true;            
         }
     }
 
@@ -188,7 +208,7 @@ public class GameManager : MonoBehaviour
     public void UpdateCurrentViewers(int newCurrentViewers){
         currentViewers = newCurrentViewers;
         statsDisplay.UpdateViewersDisplay(currentViewers);
-        Debug.Log("currentViewers set to: "+ currentViewers);
+        //Debug.Log("currentViewers set to: "+ currentViewers);
     }
 
     public int GetCurrentViewers(){
@@ -198,7 +218,7 @@ public class GameManager : MonoBehaviour
     public void UpdateCurrentFollowers(int followersChange){
         currentFollowers += followersChange;
         statsDisplay.UpdateFollowersDisplay(currentFollowers);
-        Debug.Log("currentFollowers set to: "+ currentFollowers);
+        //Debug.Log("currentFollowers set to: "+ currentFollowers);
     }
 
     public int GetCurrentFollowers(){
@@ -208,7 +228,7 @@ public class GameManager : MonoBehaviour
     public void UpdateCurrentSubs(int subsChange){
         currentSubs += subsChange;
         statsDisplay.UpdateSubscribersDisplay(currentSubs);
-        Debug.Log("currentSubs set to: "+ currentSubs);
+        //Debug.Log("currentSubs set to: "+ currentSubs);
     }
 
     public int GetCurrentSubs(){
@@ -217,7 +237,7 @@ public class GameManager : MonoBehaviour
 
     public void UpdateBankroll(int bankrollChange){
         currentBankroll += bankrollChange;
-        Debug.Log("currentBankroll set to: " + currentBankroll);
+        //Debug.Log("currentBankroll set to: " + currentBankroll);
     }
 
     public int GetBankroll(){
@@ -241,5 +261,40 @@ public class GameManager : MonoBehaviour
 
     public List<TopDLogEntry> GetTopDLog(){
         return topDLog;
+    }
+
+    public IEnumerator EndStreamSession(){
+        viewersManager.SetStreamActive(false);
+        Debug.Log("Stream active set to false");
+        lastSesViewersPeak = viewersManager.GetSesViewersPeak();
+        lastSesFollowersChange = viewersManager.GetSesFollowersChange();
+        lastSesSubscribersChange = viewersManager.GetSesSubscribersChange();
+        lastSesDonationsCount = viewersManager.GetSesDonationsCount();
+        lastSesDonationsAmountTotal = viewersManager.GetSesDonationsAmountTotal();
+
+        yield return new WaitForSeconds(sessionEndDelay);
+        
+        sceneLoader.LoadSessionStatsScene();
+        resetDone = false;
+    }
+
+    public int GetLastSesViewersPeak(){
+        return lastSesViewersPeak;
+    }
+
+    public int GetLastSesFollowersChange(){
+        return lastSesFollowersChange;
+    }
+
+    public int GetLastSesSubscribersChange(){
+        return lastSesSubscribersChange;
+    }
+
+    public int GetLastSesDonationsCount(){
+        return lastSesDonationsCount;
+    }
+
+    public int GetLastSesDonationsAmountTotal(){
+        return lastSesDonationsAmountTotal;
     }
 }
