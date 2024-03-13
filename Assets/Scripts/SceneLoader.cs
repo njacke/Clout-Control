@@ -13,4 +13,8 @@ public class SceneLoader : MonoBehaviour
         Debug.Log("Loading session stats scene...");
         SceneManager.LoadScene(2);
     }
+
+    public void LoadObjectivesScene(){
+        SceneManager.LoadScene(3);
+    }
 }

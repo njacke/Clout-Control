@@ -16,6 +16,9 @@ public class CameraActionController : MonoBehaviour
     private bool isOnCD;
     private float cooldownDuration = 5f;
     private float cooldownRemaining;
+
+    [SerializeField] AudioClip clickSound;
+
     
     void Start(){
         cameraImageController = FindObjectOfType<CameraImageController>();
@@ -29,15 +32,22 @@ public class CameraActionController : MonoBehaviour
     }
 
     void Update(){
-        if (isOnCD && cooldownRemaining > 0){
-            cooldownRemaining -= Time.deltaTime;
-            slider.value = cooldownRemaining / cooldownDuration;
+        if (isOnCD && viewersManager.GetStreamActive()){
+            if(cooldownRemaining > 0){
+                cooldownRemaining -= Time.deltaTime;
+                slider.value = cooldownRemaining / cooldownDuration;
+            }
+            else{
+                isOnCD = false;
+                dropdown.interactable = true;
+                //Debug.Log("Cooldown finished. New action available.");
+            }            
         }
-
-        else if (isOnCD){            
-            isOnCD = false;
+        else if(viewersManager.GetStreamActive()){
             dropdown.interactable = true;
-            //Debug.Log("Cooldown finished. New action available.");
+        }
+        else{
+            dropdown.interactable = false;
         }
     }
 
@@ -47,6 +57,7 @@ public class CameraActionController : MonoBehaviour
 
         StartCoroutine(cameraImageController.ScaleCameraImageSize());
 
+        // chat msg on camera change to large
         if (GameManager.Instance.GetCurrentCamSize() == GameManager.CamSizes.Large){
             
             List<Viewer> currentViewersList = viewersManager.GetCurrentViewersList();
@@ -60,6 +71,8 @@ public class CameraActionController : MonoBehaviour
         isOnCD = true;
         cooldownRemaining = cooldownDuration;
         dropdown.interactable = false;
+
+        AudioSource.PlayClipAtPoint(clickSound, Camera.main.transform.position);
 
         Debug.Log("Selected camera with index of " + value);
     }

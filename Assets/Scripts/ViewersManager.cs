@@ -11,7 +11,7 @@ public class ViewersManager : MonoBehaviour
 {
     private NotificationsDisplay notificationsDisplay;
     private ChatDisplay chatDisplay;
-    private bool streamActive = true;
+    private bool streamActive = false;
 
     // VIEWERS
     private Viewer [] viewersPool;
@@ -35,7 +35,7 @@ public class ViewersManager : MonoBehaviour
     private float followerInitialViewChance = 0.5f;
 
     // INTEREST
-    private float minViewInterestReq = 0.9f;
+    private float minViewInterestReq = 0.75f;
 
     // SATISFACTION
     private float attSatisfactionReq = 0.5f;
@@ -46,21 +46,25 @@ public class ViewersManager : MonoBehaviour
     private float updateSatisfactionCDRemaining;
     
     // FOLLOWERS
-    private float minFollowSatisfactionReq = 2f;
+    private float minFollowSatisfactionReq = 1.5f;
     private float updateFollowersCD = 1f;
     private float updateFollowersCDRemaining;
 
     // SUBSCRIBERS
-    private float minSubSatisfactionReq = 4f;
+    [SerializeField] AudioClip subSFX;
+    private float minSubSatisfactionReq = 3f;
     private float updateSubscribersCD = 1f;
     private float updateSubscribersCDRemaining;
 
     // DONATIONS
+    [SerializeField] AudioClip donationSFX;
     private float minDonationSatisfactionReq = 1f;
-    private float donationBaseChance = 0.01f;
-    private float donationFollowerChance = 0.02f;
-    private float donationSubChance = 0.04f;
-    private float donationBaseAmount = 100f;
+    private float donationBaseChance = 0.0025f;
+    private float donationFollowerChance = 0.005f;
+    private float donationSubChance = 0.01f;
+    private float bigDonationChance = 0.2f;
+    private float smallDonationBaseAmount = 10f;
+    private float bigDonationBaseAmount = 100f;
     private float updateDonationsCD = 2f;
     private float updateDonationsCDRemaining;
 
@@ -84,6 +88,9 @@ public class ViewersManager : MonoBehaviour
 
         viewersPool = GameManager.Instance.GetViewersPool();
         poolSize = viewersPool.Length;
+
+        GameManager.Instance.NewSessionReset();
+
         notificationsDisplay = FindObjectOfType<NotificationsDisplay>();
         chatDisplay = FindObjectOfType<ChatDisplay>();
 
@@ -102,7 +109,7 @@ public class ViewersManager : MonoBehaviour
 
     void Update(){
 
-        if(!initialViewersSet){
+        if(streamActive && !initialViewersSet){
             SetInitialViewers();
             initialViewersSet = true;
         }
@@ -158,8 +165,6 @@ public class ViewersManager : MonoBehaviour
         } 
     }
 
-    // PRIVATE METHODS
-
     // [OPTIMISATION EXAMPLE, NOT USED ATM]
     // add initial viewers from pool of subscribers and (non-sub) followers
     private void SetInitialViewersNew(){
@@ -187,7 +192,7 @@ public class ViewersManager : MonoBehaviour
             }
         }
 
-        GameManager.Instance.UpdateCurrentViewers(viewersIndexHash.Count);
+        GameManager.Instance.UpdateCurrentViewersCount(viewersIndexHash.Count);
     }
 
     // add initial viewers from pool of subscribers and followers
@@ -209,7 +214,7 @@ public class ViewersManager : MonoBehaviour
         }
 
         sesViewersPeak = currentViewersList.Count; 
-        GameManager.Instance.UpdateCurrentViewers(currentViewersList.Count);
+        GameManager.Instance.UpdateCurrentViewersCount(currentViewersList.Count);
     }
 
     // [OPTIMISATION EXAMPLE, NOT USED ATM]
@@ -247,7 +252,7 @@ public class ViewersManager : MonoBehaviour
         nonViewersIndexHash = newNonViewersIndexHash;
         viewersIndexHash = newNonViewersIndexHash;
 
-        GameManager.Instance.UpdateCurrentViewers(viewersIndexHash.Count);
+        GameManager.Instance.UpdateCurrentViewersCount(viewersIndexHash.Count);
     }
 
     private void UpdateViewers(){
@@ -276,7 +281,7 @@ public class ViewersManager : MonoBehaviour
             sesViewersPeak = currentViewersList.Count;
         }
 
-        GameManager.Instance.UpdateCurrentViewers(currentViewersList.Count);  
+        GameManager.Instance.UpdateCurrentViewersCount(currentViewersList.Count);  
     }
 
     // user reset used for single stream session when they JOIN or LEAVE stream [OPTIMISATION EXAMPLE, NOT USED ATM]
@@ -311,7 +316,7 @@ public class ViewersManager : MonoBehaviour
         }
 
         sesFollowersChange += followersChange;
-        GameManager.Instance.UpdateCurrentFollowers(followersChange);
+        GameManager.Instance.UpdateCurrentFollowersCount(followersChange);
     }
 
     private void UpdateSubscribers(){
@@ -325,6 +330,7 @@ public class ViewersManager : MonoBehaviour
                 subscribersChange++;
                 Debug.Log(viewer.Name + " is a new subscriber.");
 
+                AudioSource.PlayClipAtPoint(subSFX, Camera.main.transform.position);
                 notificationsDisplay.UpdateNotifications(viewer.Name, 0, false);
 
                 if (UnityEngine.Random.Range(0, 1f) < subAndDonoMessageChance){
@@ -334,7 +340,7 @@ public class ViewersManager : MonoBehaviour
         }
 
         sesSubscribersChange += subscribersChange;
-        GameManager.Instance.UpdateCurrentSubs(subscribersChange);
+        GameManager.Instance.UpdateCurrentSubsCount(subscribersChange);
     }
 
     private void UpdateDonations(){
@@ -356,6 +362,17 @@ public class ViewersManager : MonoBehaviour
     private void HandleDonation(Viewer viewer, float donationChance){
 
         if (UnityEngine.Random.Range(0f, 1f) <= donationChance){
+
+            float donationBaseAmount;
+
+            // set donation base amount
+            if (UnityEngine.Random.Range(0f, 1f) <= bigDonationChance){
+                donationBaseAmount = bigDonationBaseAmount;
+            }
+            else{
+                donationBaseAmount = smallDonationBaseAmount;
+            }
+
             var donationAmount = (int)Math.Round(donationBaseAmount * UnityEngine.Random.Range(0f, 1f), 0);
             if (donationAmount <= 0){
                 donationAmount = 1; // set to 1 so there are no $0 donations
@@ -366,9 +383,11 @@ public class ViewersManager : MonoBehaviour
 
             sesDonationsCount++;
             sesDonationsAmountTotal += donationAmount;
-            GameManager.Instance.UpdateBankroll(donationAmount);
+
+            GameManager.Instance.UpdateBankrollAmount(donationAmount);
             Debug.Log(viewer.Name + " has donated $" + donationAmount);
 
+            AudioSource.PlayClipAtPoint(donationSFX, Camera.main.transform.position);
             notificationsDisplay.UpdateNotifications(viewer.Name, donationAmount, true);
 
             if (UnityEngine.Random.Range(0, 1f) < subAndDonoMessageChance){
@@ -495,10 +514,12 @@ public class ViewersManager : MonoBehaviour
         }
     }
 
-    // PUBLIC METHODS
-
     public void SetStreamActive(bool state){
         streamActive = state;
+    }
+
+    public bool GetStreamActive(){
+        return streamActive;
     }        
 
     public void HandleSocialAction(int socialActionIndex){

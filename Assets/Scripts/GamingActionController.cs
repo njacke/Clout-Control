@@ -14,8 +14,9 @@ public class GamingActionController : MonoBehaviour
     private Slider slider;
     private bool isOnCD;
     float cooldownDuration = 20f;
-    float cooldownRemaining;
-    
+    float cooldownRemaining;    
+    [SerializeField] AudioClip clickSound;
+
     void Start(){
         gameImageController = FindObjectOfType<GameImageController>();
         viewersManager = FindObjectOfType<ViewersManager>();
@@ -28,15 +29,22 @@ public class GamingActionController : MonoBehaviour
     }
 
     void Update(){
-        if (isOnCD && cooldownRemaining > 0){
-            cooldownRemaining -= Time.deltaTime;
-            slider.value = cooldownRemaining / cooldownDuration;
+        if (isOnCD && viewersManager.GetStreamActive()){
+            if(cooldownRemaining > 0){
+                cooldownRemaining -= Time.deltaTime;
+                slider.value = cooldownRemaining / cooldownDuration;
+            }
+            else{
+                isOnCD = false;
+                dropdown.interactable = true;
+                //Debug.Log("Cooldown finished. New action available.");
+            }            
         }
-
-        else if (isOnCD){            
-            isOnCD = false;
+        else if(viewersManager.GetStreamActive()){
             dropdown.interactable = true;
-            //Debug.Log("Cooldown finished. New action available.");
+        }
+        else{
+            dropdown.interactable = false;
         }
     }
 
@@ -57,6 +65,8 @@ public class GamingActionController : MonoBehaviour
         isOnCD = true;
         cooldownRemaining = cooldownDuration;
         dropdown.interactable = false;
+
+        AudioSource.PlayClipAtPoint(clickSound, Camera.main.transform.position);
 
         Debug.Log("Selected game with index of " + value);
     }

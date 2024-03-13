@@ -8,6 +8,7 @@ public class Countdown : MonoBehaviour
 {
     [SerializeField] TextMeshProUGUI sessionEndedAnn;
     [SerializeField] UnityEngine.UI.Image CDImage;
+    [SerializeField] AudioClip endStreamSound;
     string sessionEndedAnnText = "Stream session has ended!";
     private float sessionDurationTotal = 60f;
     private float sessionDurationRemaining;
@@ -33,7 +34,10 @@ public class Countdown : MonoBehaviour
         }
         else if(!sessionEndCalled){
             sessionEndedAnn.text = sessionEndedAnnText;
-            StartCoroutine(GameManager.Instance.EndStreamSession());
+
+            AudioSource.PlayClipAtPoint(endStreamSound, Camera.main.transform.position);
+
+            StartCoroutine(GameManager.Instance.EndSession());
             sessionEndCalled = true;
         }
     }

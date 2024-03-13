@@ -1026,7 +1026,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: -0.5, y: 0}
-  m_SizeDelta: {x: 535, y: 415}
+  m_SizeDelta: {x: 538, y: 416}
   m_Pivot: {x: 0, y: 0}
 --- !u!114 &117421932
 MonoBehaviour:
@@ -1048,7 +1048,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 1ca0228a4b8b54d4aaea589f74b29a0b, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 0232411921e9363428d26bc297886f43, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -1078,6 +1078,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6838e772f0be46d4eb7241ce4c6bdea3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  neutralSprite: {fileID: 21300000, guid: 0232411921e9363428d26bc297886f43, type: 3}
+  flirtSprite: {fileID: 21300000, guid: 281416e1b4fe79244811b0076b0d7025, type: 3}
+  giggleSprite: {fileID: 21300000, guid: 8dd59197fc1201d4294cc3c2be505e16, type: 3}
+  hypeSprite: {fileID: 21300000, guid: 64ef9fe705286824187334b4cb16d667, type: 3}
+  rageSprite: {fileID: 21300000, guid: f1b263bf42c82f441b5ab54c31cee0f8, type: 3}
 --- !u!1 &125164970
 GameObject:
   m_ObjectHideFlags: 0
@@ -1715,6 +1720,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 79cee0aa99970b541b025c7fc6a98648, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  subSFX: {fileID: 8300000, guid: 0a569be3c2909f44f9a4a6d9effc8a23, type: 3}
+  donationSFX: {fileID: 8300000, guid: 6fdb1577780e28a42adda7adb00ddf84, type: 3}
 --- !u!4 &194003154
 Transform:
   m_ObjectHideFlags: 0
@@ -2802,6 +2809,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1d43a7c650c3c7740b2fbdedb00eeb58, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  clickSound: {fileID: 8300000, guid: f39e1c4c2478838469f3292b94fa791b, type: 3}
 --- !u!1 &402914707
 GameObject:
   m_ObjectHideFlags: 0
@@ -3583,6 +3591,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f3261b90614e94a4f847ba4b5d3943d2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  clickSound: {fileID: 8300000, guid: f39e1c4c2478838469f3292b94fa791b, type: 3}
+  flirtSFX: {fileID: 8300000, guid: 2b234e61f86350341baa04ed17b710cb, type: 3}
+  giggleSFX: {fileID: 8300000, guid: b491902d88b7aef48b43b6a1924bc0f9, type: 3}
+  hypeSFX: {fileID: 8300000, guid: 0d08d8a0b8c56944c9aa186f413ea420, type: 3}
+  rageSFX: {fileID: 8300000, guid: 5a126bbedc305214db7131ee70bb3fed, type: 3}
 --- !u!1 &495371568
 GameObject:
   m_ObjectHideFlags: 0
@@ -4925,6 +4938,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 548aaed4482d94a47b4125ac56c40894, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  clickSound: {fileID: 8300000, guid: f39e1c4c2478838469f3292b94fa791b, type: 3}
 --- !u!1 &715361044
 GameObject:
   m_ObjectHideFlags: 0
@@ -11816,6 +11830,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sessionEndedAnn: {fileID: 1685065373}
   CDImage: {fileID: 715361046}
+  endStreamSound: {fileID: 8300000, guid: 5c2035c9f11093446b94a4dfe1166e5d, type: 3}
 --- !u!1 &1685065371
 GameObject:
   m_ObjectHideFlags: 0
@@ -11851,7 +11866,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 226}
-  m_SizeDelta: {x: 200, y: 50}
+  m_SizeDelta: {x: 300, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1685065373
 MonoBehaviour:
@@ -11873,7 +11888,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Stream session has ended!
+  m_text: STREAM SESSION HAS ENDED!!!
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
