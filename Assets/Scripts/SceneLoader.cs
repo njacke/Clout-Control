@@ -5,16 +5,26 @@ using UnityEngine.SceneManagement;
 
 public class SceneLoader : MonoBehaviour
 {
+    public void LoadMenuStartScene(){
+        SceneManager.LoadScene(0);
+    }
+
     public void LoadStreamSessionScene(){
         SceneManager.LoadScene(1);
     }
 
     public void LoadSessionStatsScene(){
-        Debug.Log("Loading session stats scene...");
+        //Debug.Log("Loading session stats scene...");
         SceneManager.LoadScene(2);
     }
 
-    public void LoadObjectivesScene(){
-        SceneManager.LoadScene(3);
+    public void LoadObjectivesOrEndScene(){
+        if(GameManager.Instance.GetStreamDay() < GameManager.Instance.GetMaxStreamDay()){
+            SceneManager.LoadScene(3);
+        }
+        else{
+            Destroy(GameManager.Instance.gameObject);
+            SceneManager.LoadScene(4);
+        }
     }
 }

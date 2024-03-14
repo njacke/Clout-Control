@@ -80,81 +80,113 @@ public class ChatDisplay : MonoBehaviour
         "GOOD STREAM",
         "we vibin'",
         "how u doin bb?",
-        "luv ur stream"
+        "luv ur stream",
+        "what we up to?",
+        "HI MUM",
+        "sup chat",
+        "<3",
+        "i'm #1 fan"
     };
 
     private List<string> generalNegMessages = new List<string>(){
         "omg you suck!",
         "get a job",
-        "e-girl lmao",
+        "e-girl LMAO",
         "boooring",
-        "ResidentSleeper"
+        "ResidentSleeper",
+        "simps only",
+        "pls end stream",
+        "BOOOOO",
+        "seen better",
+        "down bad"
     };
 
     private List<string> newSubMessages = new List<string>(){
         "i just subbed",
         "have my sub",
         "sub def worth",
+        "SUB ARMY",
+        "subchain inc"
     };
 
     private List<string> newDonationMessages = new List<string>(){
         "glad I fund you!",
         "take my money",
-        "DONO INC",
+        "buy smth nice",
+        "child support",
+        "cha-ching"
     };
 
     private List<string> SAFlirtMessages = new List<string>(){
         "lookin' good",
         "nice nice",
         "boobas",
+        "for me?",
+        "MWAAA"
     };
 
     private List<string> SAGiggleMessages = new List<string>(){
         "KEKW",
         "sooo funny",
-        "cutieeee ",
+        "cutieeee",
+        "nice one",
+        "fun at parties"
     };
 
     private List<string> SAHypeMessages = new List<string>(){
         "woop woop",
         "let's gooo",
         "PogChamp",
+        "so exciting",
+        "hypetrain!!!"
     };
 
     private List<string> SARageMessages = new List<string>(){
         "ARRRRRR",
         "calma calma",
         "REEEEEE",
+        "u mad bra?",
+        "OVER 9000"
     };
 
     private List<string> gameChangePosMessages = new List<string>(){
-        "yessss",
+        "luv dis game",
         "PepeGamer",
-        "finish today",
+        "we playin'",
+        "finish today?",
+        "new game?"
     };
 
     private List<string> gameChangeNegMessages = new List<string>(){
         "why dis game",
         "omg not this",
         "bad game",
+        "this again?",
+        "IQ10 game lul"
     };
 
     private List<string> gamePlayPosMessages = new List<string>(){
         "doing great",
         "sooo good",
         "nice progress",
+        "I can help!",
+        "this has MP?"        
     };
 
     private List<string> gamePlayNegMessages = new List<string>(){
         "sooo bad",
         "l2p lol",
         "skill issue",
+        "best gamer EU",
+        "backseat gaming"
     };
 
     private List<string> gamePlayNoneMessages = new List<string>(){
         "nice 'gameplay'",
         "play smth...",
-        "wen game",
+        "WEN GAME",
+        "waiting room",
+        "where n00ds"
     };
 
     // only used when changed to large camera
@@ -162,6 +194,8 @@ public class ChatDisplay : MonoBehaviour
         "Kreygasm",
         "mmmmm hehe",
         "HD 'gameplay'",
+        "#goals",
+        "bigger better"
     };
 
     void Start(){

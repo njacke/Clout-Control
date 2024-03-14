@@ -26,6 +26,8 @@ public class GamingActionController : MonoBehaviour
         dropdown.onValueChanged.AddListener(StartAction);
 
         slider = GetComponentInChildren<Slider>();
+
+        GameManager.Instance.SetCurrentGameGenre(0);
     }
 
     void Update(){
@@ -56,7 +58,7 @@ public class GamingActionController : MonoBehaviour
 
         List<Viewer> currentViewersList = viewersManager.GetCurrentViewersList();
 
-        if (currentViewersList.Any()){
+        if (currentViewersList.Any() && GameManager.Instance.GetCurrentGameGenre() != GameManager.GameGenres.None){
 
             var randomIndex = Random.Range(0, currentViewersList.Count);        
             chatDisplay.UpdateChatDisplay(currentViewersList[randomIndex], ChatDisplay.MessageType.GameChange);

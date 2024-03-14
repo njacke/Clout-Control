@@ -13,18 +13,20 @@ public class GameManager : MonoBehaviour
     private ViewersManager viewersManager;
     private StatsDisplay statsDisplay;
     private float sessionEndDelay = 2f;
+    private int streamDay = 0;
+    private int maxStreamDay = 3;
 
     // VIEWER POOL
     private string[] viewersNames = {
         "James", "William", "Robert", "John", "David", "Richard", "Joseph", "Charles", "Thomas", "Christoph",
         "Daniel", "Matthew", "Anthony", "Mark", "Donald", "Steven", "Paul", "Andrew", "Kenneth", "George",
-        "Joshua", "Kevin", "Brian", "Edward", "Ronald", "Timothy", "Jason", "Larry", "Jeffrey", "Frank",
+        "Elon", "Kevin", "Brian", "Edward", "Ronald", "Timothy", "Jason", "Larry", "Jeffrey", "Frank",
         "Scott", "Eric", "Stephen", "Raymond", "Gregory", "Joshua", "Dennis", "Jerry", "Walter", "Patrick",
         "Peter", "Harold", "Douglas", "Henry", "Carl", "Arthur", "Ryan", "Roger", "Joe", "Juan",
         "Jack", "Albert", "Jonathan", "Justin", "Terry", "Gerald", "Keith", "Samuel", "Willie", "Ralph",
         "Lawrence", "Nicholas", "Roy", "Benjamin", "Bruce", "Brandon", "Adam", "Harry", "Fred", "Wayne",
         "Billy", "Steve", "Louis", "Jeremy", "Aaron", "Randy", "Howard", "Eugene", "Carlos", "Russell",
-        "Mary", "Patricia", "Jennifer", "Linda", "Beth", "Barbara", "Susan", "Jessica", "Sarah", "Karen",
+        "Mary", "Hillary", "Jennifer", "Linda", "Beth", "Barbara", "Susan", "Jessica", "Sarah", "Karen",
         "Nancy", "Lisa", "Betty", "Dorothy", "Sandra", "Ashley", "Kimberly", "Donna", "Emily", "Michelle"
     };
 
@@ -103,8 +105,12 @@ public class GameManager : MonoBehaviour
         }        
     }
 
-    void Start(){
-        NewSessionReset();
+    public int GetStreamDay(){
+        return streamDay;
+    }
+
+    public int GetMaxStreamDay(){
+        return maxStreamDay;
     }
 
     // VIEWER POOL
@@ -286,6 +292,8 @@ public class GameManager : MonoBehaviour
         }
 
         viewersManager.SetStreamActive(true);
+
+        streamDay++;
     }
 
     public int GetLastSesViewersPeak(){
